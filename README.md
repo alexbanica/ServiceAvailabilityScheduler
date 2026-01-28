@@ -10,26 +10,32 @@ Minimal Node.js app to claim services per environment with email-only login and 
 npm install
 ```
 
-2) Create the database and tables in MariaDB
+2) Build the TypeScript server and frontend
+
+```bash
+npm run build
+```
+
+3) Create the database and tables in MariaDB
 
 ```sql
 -- Run this inside your MariaDB client
 SOURCE schema.sql;
 ```
 
-3) Insert users manually
+4) Insert users manually
 
 ```sql
 INSERT INTO users (email, nickname) VALUES ('jane@example.com', 'Jane');
 ```
 
-4) Set your MariaDB connection string
+5) Set your MariaDB connection string
 
 ```bash
 export DATABASE_URL='mysql://user:password@host:3306/database_name'
 ```
 
-5) Start the server
+6) Start the server
 
 ```bash
 npm start

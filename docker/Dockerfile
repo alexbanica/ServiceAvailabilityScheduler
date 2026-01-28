@@ -23,16 +23,19 @@ FROM node:BASE_BUILD_IMAGE_VERSION AS builder
 WORKDIR /app
 COPY --from=downloader /tmp/src ./
 
-RUN npm ci --omit=dev
+RUN npm ci
+RUN npm run build
 
 FROM node:BASE_IMAGE_VERSION AS runtime
 
 WORKDIR /app
-COPY --from=builder /app ./
-#COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
 
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]
