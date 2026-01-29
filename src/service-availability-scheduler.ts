@@ -1,0 +1,71 @@
+import path from 'path';
+import express from 'express';
+import session from 'express-session';
+import type { Pool } from 'mysql2/promise';
+import { initDb } from './db';
+import { ConfigLoaderService } from './services/ConfigLoaderService';
+import { ServiceCatalogService } from './services/ServiceCatalogService';
+import { UserService } from './services/UserService';
+import { ReservationService } from './services/ReservationService';
+import { UserRepository } from './repositories/UserRepository';
+import { ReservationRepository } from './repositories/ReservationRepository';
+import { AuthController } from './controllers/AuthController';
+import { ServiceController } from './controllers/ServiceController';
+import { ReservationController } from './controllers/ReservationController';
+import { PageController } from './controllers/PageController';
+
+const app = express();
+const PORT = Number(process.env.PORT || 3000);
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
+
+const ROOT_DIR = path.join(__dirname, '..');
+const CONFIG_PATH = path.join(ROOT_DIR, 'config', 'services.yml');
+
+app.use(express.json());
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    },
+  }),
+);
+
+app.use('/public', express.static(path.join(ROOT_DIR, 'public')));
+
+let db: Pool;
+
+async function start() {
+  const configLoader = new ConfigLoaderService();
+  const config = configLoader.loadConfig(CONFIG_PATH);
+  const catalogService = new ServiceCatalogService();
+  const services = catalogService.buildServiceList(config);
+
+  db = await initDb();
+
+  const userRepository = new UserRepository(db);
+  const reservationRepository = new ReservationRepository(db);
+
+  const userService = new UserService(userRepository);
+  const reservationService = new ReservationService(
+    reservationRepository,
+    userService,
+    services,
+    config.expiryWarningMinutes,
+    config.autoRefreshMinutes,
+  );
+
+  new PageController(ROOT_DIR).register(app);
+  new AuthController(userService).register(app);
+  new ServiceController(reservationService).register(app);
+  new ReservationController(reservationService).register(app);
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+start();

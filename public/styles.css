@@ -66,6 +66,10 @@ main {
   border: 1px solid rgba(242, 95, 76, 0.25);
 }
 
+.in-use-item span.muted {
+  margin-left: 0.4rem;
+}
+
 .services-grid {
   display: grid;
   gap: 2rem;
@@ -89,6 +93,11 @@ main {
 .service-list {
   display: grid;
   gap: 1rem;
+}
+
+.service-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .service-item {

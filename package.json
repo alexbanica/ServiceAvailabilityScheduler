@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "commonjs",
+  "main": "dist/service-availability-scheduler.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",
-    "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts"
+    "postinstall": "npm install typescript",
+    "build": "npm install && tsc -p tsconfig.json && tsc -p tsconfig.client.json",
+    "start": "node dist/service-availability-scheduler.js",
+    "dev": "ts-node src/service-availability-scheduler.ts",
+    "lint": "eslint 'src/**/*.{js,ts}' --fix",
+    "clean": "rm -rf dist && rm -rf public/js",
+    "format": "prettier --write 'src/**/*.{js,ts}'"
   },
   "dependencies": {
+    "dotenv": "^16.3.1",
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "js-yaml": "^4.1.0",
@@ -18,8 +24,37 @@
     "@types/express": "^4.17.21",
     "@types/express-session": "^1.17.10",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^20.11.25",
+    "@types/node": "^16.3.1",
+    "@typescript-eslint/eslint-plugin": "^6.5.0",
+    "@typescript-eslint/parser": "^6.5.0",
+    "eslint": "^8.49.0",
+    "prettier": "^3.0.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.2"
+    "typescript": "^5.9.3"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "printWidth": 80
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
+    "rules": {
+      "semi": [
+        "error",
+        "always"
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ]
+    }
   }
 }

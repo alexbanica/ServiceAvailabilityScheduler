@@ -7,27 +7,71 @@
   <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
-  <header class="top-bar">
-    <div>
-      <h1>Service Availability</h1>
-      <p id="welcome"></p>
-    </div>
-    <div class="top-actions">
-      <button id="refresh">Refresh</button>
-      <button id="logout">Logout</button>
-    </div>
-  </header>
+  <div id="app" v-cloak>
+    <header class="top-bar">
+      <div>
+        <h1>Service Availability</h1>
+        <p v-if="user">Hello {{ user.nickname }}</p>
+      </div>
+      <div class="top-actions">
+        <button @click="refresh">Refresh</button>
+        <button @click="logout">Logout</button>
+      </div>
+    </header>
 
-  <main>
-    <section class="in-use">
-      <h2>In Use</h2>
-      <div id="in-use" class="in-use-list"></div>
-    </section>
-    <section id="services" class="services-grid"></section>
-  </main>
+    <main>
+      <section class="in-use">
+        <h2>In Use</h2>
+        <div class="in-use-list">
+          <p v-if="inUseServices.length === 0" class="muted">No services are currently claimed.</p>
+            <div v-for="service in inUseServices" :key="service.key" class="in-use-item">
+            <div>
+              <strong>{{ service.label }}</strong>
+              <span class="muted">({{ service.environment }})</span>
+            </div>
+            <div class="muted">
+              Taken by {{ service.claimedBy }} · Ends at {{ formatTime(service.expiresAt) }}
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <div id="toast" class="toast hidden"></div>
+      <section class="services-grid">
+        <section v-for="group in groupedServices" :key="group.environment" class="env-card">
+          <div class="env-header">
+            <h2>{{ group.environment }}</h2>
+          </div>
+          <div class="service-list">
+            <div
+              v-for="service in group.services"
+              :key="service.key"
+              class="service-item"
+              :class="service.active ? 'claimed' : 'available'"
+            >
+              <div class="service-info">
+                <h3>{{ service.label }}</h3>
+                <p>{{ service.active ? `Taken by ${service.claimed_by}` : 'Available' }}</p>
+                <p class="muted">
+                  {{ service.active ? `Ends at ${formatTime(service.expiresAt)}` : `Default ${service.defaultMinutes} minutes` }}
+                </p>
+              </div>
+              <div class="service-actions">
+                <button v-if="!service.active" @click="claim(service.key)">Claim</button>
+                <template v-else-if="user && service.claimedById === user.id">
+                  <button @click="extend(service.key)">Extend</button>
+                  <button class="secondary" @click="release(service.key)">Release</button>
+                </template>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
 
+    <div id="toast" class="toast" :class="{ hidden: !toastVisible }">{{ toastMessage }}</div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script type="module" src="/public/js/app.js"></script>
 </body>
 </html>
