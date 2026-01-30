@@ -13,7 +13,9 @@ export class AppController {
 
   bootstrap(Vue: any): void {
     const { createApp, ref, computed, onMounted, watch } = Vue as {
-      createApp: (options: Record<string, unknown>) => { mount: (selector: string) => void };
+      createApp: (options: Record<string, unknown>) => {
+        mount: (selector: string) => void;
+      };
       ref: <T>(value: T) => { value: T };
       computed: <T>(fn: () => T) => { value: T };
       onMounted: (fn: () => void | Promise<void>) => void;
@@ -29,11 +31,25 @@ export class AppController {
         const ownerFilter = ref(
           localStorage.getItem(this.ownerFilterStorageKey) || 'all',
         );
+        const serviceNameFilter = ref('');
+        const expandedOverrides = ref<Record<string, boolean>>({});
         const toastMessage = ref('');
         const toastVisible = ref(false);
 
         const normalizeOwner = (owner: string | null): string =>
           owner || 'unowned';
+
+        const parsedServiceRegex = computed(() => {
+          const raw = serviceNameFilter.value.trim();
+          if (!raw) {
+            return { regex: null as RegExp | null, error: '' };
+          }
+          try {
+            return { regex: new RegExp(raw, 'i'), error: '' };
+          } catch (err) {
+            return { regex: null, error: (err as Error).message };
+          }
+        });
 
         const owners = computed(() => {
           const uniqueOwners = new Map<string, string>();
@@ -60,10 +76,20 @@ export class AppController {
           );
         });
 
+        const getExpandedState = (label: string, matches: boolean): boolean => {
+          const override = expandedOverrides.value[label];
+          if (typeof override === 'boolean') {
+            return override;
+          }
+          return matches;
+        };
+
         const inUseServices = computed(() =>
           filteredServices.value
             .filter((svc: Service) => svc.active)
-            .sort((a: Service, b: Service) => (a.expiresAt || '').localeCompare(b.expiresAt || ''))
+            .sort((a: Service, b: Service) =>
+              (a.expiresAt || '').localeCompare(b.expiresAt || ''),
+            ),
         );
 
         const groupedServices = computed(() => {
@@ -75,15 +101,46 @@ export class AppController {
             }
             map.get(serviceLabel)?.push(svc);
           });
-          return Array.from(map.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([serviceLabel, items]) => ({
-              serviceLabel,
-              services: items.sort((a, b) =>
-                a.environment.localeCompare(b.environment),
-              ),
-            }));
+          const { regex } = parsedServiceRegex.value;
+          const groups = Array.from(map.entries()).map(
+            ([serviceLabel, items]) => {
+              const ownerLabel = normalizeOwner(items[0]?.owner ?? null);
+              const matches = regex ? regex.test(serviceLabel) : true;
+              return {
+                serviceLabel,
+                ownerLabel,
+                matches,
+                expanded: getExpandedState(serviceLabel, matches),
+                services: items.sort((a, b) =>
+                  a.environment.localeCompare(b.environment),
+                ),
+              };
+            },
+          );
+
+          const sortByOwner = (
+            a: (typeof groups)[number],
+            b: (typeof groups)[number],
+          ) => {
+            const ownerCompare = a.ownerLabel.localeCompare(b.ownerLabel);
+            if (ownerCompare !== 0) {
+              return ownerCompare;
+            }
+            return a.serviceLabel.localeCompare(b.serviceLabel);
+          };
+
+          const matched = groups
+            .filter((group) => group.matches)
+            .sort(sortByOwner);
+          const unmatched = groups
+            .filter((group) => !group.matches)
+            .sort(sortByOwner);
+          return matched.concat(unmatched);
         });
+
+        const serviceNameFilterError = computed(
+          () => parsedServiceRegex.value.error,
+        );
 
         const showToast = (message: string) => {
           toastMessage.value = message;
@@ -99,9 +156,23 @@ export class AppController {
           autoRefreshMinutes.value = data.autoRefreshMinutes;
 
           const ownerKeys = new Set(owners.value.map((owner) => owner.value));
-          if (ownerFilter.value !== 'all' && !ownerKeys.has(ownerFilter.value)) {
+          if (
+            ownerFilter.value !== 'all' &&
+            !ownerKeys.has(ownerFilter.value)
+          ) {
             ownerFilter.value = 'all';
           }
+
+          const labels = new Set(data.services.map((svc) => svc.label));
+          const nextOverrides: Record<string, boolean> = {};
+          Object.entries(expandedOverrides.value).forEach(
+            ([label, expanded]) => {
+              if (labels.has(label)) {
+                nextOverrides[label] = expanded;
+              }
+            },
+          );
+          expandedOverrides.value = nextOverrides;
         };
 
         const loadUser = async () => {
@@ -150,6 +221,19 @@ export class AppController {
           localStorage.removeItem(this.ownerFilterStorageKey);
         };
 
+        const toggleGroup = (label: string) => {
+          const current = groupedServices.value.find(
+            (group) => group.serviceLabel === label,
+          );
+          if (!current) {
+            return;
+          }
+          expandedOverrides.value = {
+            ...expandedOverrides.value,
+            [label]: !current.expanded,
+          };
+        };
+
         const refresh = async () => {
           await loadServices();
         };
@@ -185,6 +269,10 @@ export class AppController {
           localStorage.setItem(this.ownerFilterStorageKey, value);
         });
 
+        watch(serviceNameFilter, () => {
+          expandedOverrides.value = {};
+        });
+
         return {
           user,
           services,
@@ -192,6 +280,9 @@ export class AppController {
           groupedServices,
           ownerFilter,
           owners,
+          serviceNameFilter,
+          serviceNameFilterError,
+          toggleGroup,
           toastMessage,
           toastVisible,
           formatTime: TimeHelper.formatTime,
@@ -199,9 +290,9 @@ export class AppController {
           release,
           extend,
           refresh,
-          logout
+          logout,
         };
-      }
+      },
     }).mount('#app');
   }
 }

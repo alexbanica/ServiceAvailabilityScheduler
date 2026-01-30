@@ -4,6 +4,6 @@ export class ServicesResponseDto {
   constructor(
     public readonly expiryWarningMinutes: number,
     public readonly autoRefreshMinutes: number,
-    public readonly services: Service[]
+    public readonly services: Service[],
   ) {}
 }

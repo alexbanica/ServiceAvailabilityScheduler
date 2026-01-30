@@ -27,9 +27,9 @@ export class LoginController {
           email,
           error,
           submitting,
-          submit
+          submit,
         };
-      }
+      },
     }).mount('#login-app');
   }
 }

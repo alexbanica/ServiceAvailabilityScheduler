@@ -23,6 +23,17 @@
             </option>
           </select>
         </label>
+        <label class="name-filter">
+          <span>Service</span>
+          <input
+            v-model="serviceNameFilter"
+            type="text"
+            placeholder="Regex (e.g. ^order)"
+          />
+          <span v-if="serviceNameFilterError" class="muted filter-error">
+            {{ serviceNameFilterError }}
+          </span>
+        </label>
         <button @click="refresh">Refresh</button>
         <button @click="logout">Logout</button>
       </div>
@@ -49,8 +60,11 @@
         <section v-for="group in groupedServices" :key="group.serviceLabel" class="env-card">
           <div class="env-header">
             <h2>{{ group.serviceLabel }}</h2>
+            <button class="secondary toggle-card" @click="toggleGroup(group.serviceLabel)">
+              {{ group.expanded ? '−' : '+' }}
+            </button>
           </div>
-          <div class="service-list">
+          <div v-if="group.expanded" class="service-list">
             <div
               v-for="service in group.services"
               :key="service.key"

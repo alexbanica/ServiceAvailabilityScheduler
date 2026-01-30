@@ -41,19 +41,21 @@ export class ReservationService {
         asNullableString(svc.claimed_by),
         asNullableNumber(svc.claimed_by_id),
         asNullableString(svc.claimed_at),
-        asNullableString(svc.expires_at)
+        asNullableString(svc.expires_at),
       );
     });
 
     return new ServicesResponseDto(
       data.expiry_warning_minutes,
       data.auto_refresh_minutes,
-      services
+      services,
     );
   }
 
   static async claim(serviceKey: string): Promise<void> {
-    const response = await ApiService.post('/api/claim', { service_key: serviceKey });
+    const response = await ApiService.post('/api/claim', {
+      service_key: serviceKey,
+    });
     if (!response.ok) {
       const data = (await response.json()) as { error?: string };
       throw new Error(data.error || 'Unable to claim service.');
@@ -61,7 +63,9 @@ export class ReservationService {
   }
 
   static async release(serviceKey: string): Promise<void> {
-    const response = await ApiService.post('/api/release', { service_key: serviceKey });
+    const response = await ApiService.post('/api/release', {
+      service_key: serviceKey,
+    });
     if (!response.ok) {
       const data = (await response.json()) as { error?: string };
       throw new Error(data.error || 'Unable to release service.');
@@ -69,7 +73,9 @@ export class ReservationService {
   }
 
   static async extend(serviceKey: string): Promise<void> {
-    const response = await ApiService.post('/api/extend', { service_key: serviceKey });
+    const response = await ApiService.post('/api/extend', {
+      service_key: serviceKey,
+    });
     if (!response.ok) {
       const data = (await response.json()) as { error?: string };
       throw new Error(data.error || 'Unable to extend service.');

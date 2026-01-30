@@ -1,12 +1,14 @@
 export class EventsService {
   private eventSource: EventSource | null = null;
 
-  start(onExpiring: (data: {
-    service_key: string;
-    environment: string;
-    service_name: string;
-    minutes_left: number;
-  }) => void): void {
+  start(
+    onExpiring: (data: {
+      service_key: string;
+      environment: string;
+      service_name: string;
+      minutes_left: number;
+    }) => void,
+  ): void {
     if (this.eventSource) {
       this.eventSource.close();
     }

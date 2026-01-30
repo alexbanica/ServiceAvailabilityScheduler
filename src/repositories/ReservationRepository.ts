@@ -72,7 +72,7 @@ export class ReservationRepository extends AbstractMysqlRepository {
     reservation: Reservation,
     releasedAt: string,
   ): Promise<Reservation> {
-    await this.run(`UPDATE reservations SET released_at = ? WHERE id = ?`, [
+    await this.run('UPDATE reservations SET released_at = ? WHERE id = ?', [
       releasedAt,
       reservation.id,
     ]);
@@ -92,7 +92,7 @@ export class ReservationRepository extends AbstractMysqlRepository {
     reservation: Reservation,
     expiresAt: string,
   ): Promise<Reservation> {
-    await this.run(`UPDATE reservations SET expires_at = ? WHERE id = ?`, [
+    await this.run('UPDATE reservations SET expires_at = ? WHERE id = ?', [
       expiresAt,
       reservation.id,
     ]);

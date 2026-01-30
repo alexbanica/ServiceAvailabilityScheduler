@@ -11,6 +11,6 @@ export class Service {
     public readonly claimedBy: string | null,
     public readonly claimedById: number | null,
     public readonly claimedAt: string | null,
-    public readonly expiresAt: string | null
+    public readonly expiresAt: string | null,
   ) {}
 }
