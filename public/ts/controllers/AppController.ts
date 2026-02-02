@@ -38,6 +38,12 @@ export class AppController {
         const toastVisible = ref(false);
         const isLoading = ref(true);
         const theme = ref(ThemeHelper.getInitialTheme() as Theme);
+        const claimModalOpen = ref(false);
+        const claimType = ref<'self' | 'team'>('self');
+        const teamName = ref('');
+        const teamNameError = ref('');
+        const claimSubmitting = ref(false);
+        const claimServiceKey = ref<string | null>(null);
 
         const normalizeOwner = (owner: string | null): string =>
           owner || 'unowned';
@@ -202,12 +208,51 @@ export class AppController {
           }
         };
 
-        const claim = async (serviceKey: string) => {
+        const resetClaimModal = () => {
+          claimType.value = 'self';
+          teamName.value = '';
+          teamNameError.value = '';
+          claimSubmitting.value = false;
+          claimServiceKey.value = null;
+        };
+
+        const openClaimModal = (serviceKey: string) => {
+          claimServiceKey.value = serviceKey;
+          claimModalOpen.value = true;
+        };
+
+        const closeClaimModal = () => {
+          claimModalOpen.value = false;
+          resetClaimModal();
+        };
+
+        const submitClaim = async () => {
+          if (!claimServiceKey.value) {
+            return;
+          }
+          teamNameError.value = '';
+          let teamLabel: string | null = null;
+          if (claimType.value === 'team') {
+            const trimmed = teamName.value.trim();
+            if (!trimmed) {
+              teamNameError.value = 'Team name is required.';
+              return;
+            }
+            if (trimmed.length > 255) {
+              teamNameError.value = 'Team name is too long.';
+              return;
+            }
+            teamLabel = trimmed;
+          }
+          claimSubmitting.value = true;
           try {
-            await ReservationService.claim(serviceKey);
+            await ReservationService.claim(claimServiceKey.value, teamLabel);
             await loadServices();
+            closeClaimModal();
           } catch (err) {
             showToast((err as Error).message);
+          } finally {
+            claimSubmitting.value = false;
           }
         };
 
@@ -252,6 +297,15 @@ export class AppController {
           await loadServices();
         };
 
+        const formatClaimedBy = (service: Service): string => {
+          if (!service.claimedBy) {
+            return 'Unknown';
+          }
+          return service.claimedByTeam
+            ? `${service.claimedBy} (team)`
+            : service.claimedBy;
+        };
+
         const scheduleAutoRefresh = () => {
           if (this.refreshTimer) {
             window.clearTimeout(this.refreshTimer);
@@ -292,6 +346,10 @@ export class AppController {
           expandedOverrides.value = {};
         });
 
+        watch(claimType, () => {
+          teamNameError.value = '';
+        });
+
         return {
           user,
           services,
@@ -309,7 +367,15 @@ export class AppController {
           themeLabel,
           toggleTheme,
           formatTime: TimeHelper.formatTime,
-          claim,
+          formatClaimedBy,
+          claimModalOpen,
+          claimType,
+          teamName,
+          teamNameError,
+          claimSubmitting,
+          openClaimModal,
+          closeClaimModal,
+          submitClaim,
           release,
           extend,
           refresh,
