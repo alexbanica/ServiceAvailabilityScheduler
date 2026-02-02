@@ -5,6 +5,7 @@ import { User } from '../entities/User.js';
 import { Service } from '../entities/Service.js';
 import { ServicesResponseDto } from '../dtos/ServicesResponseDto.js';
 import { TimeHelper } from '../helpers/TimeHelper.js';
+import { ThemeHelper, Theme } from '../helpers/ThemeHelper.js';
 
 export class AppController {
   private refreshTimer: number | null = null;
@@ -35,6 +36,8 @@ export class AppController {
         const expandedOverrides = ref<Record<string, boolean>>({});
         const toastMessage = ref('');
         const toastVisible = ref(false);
+        const isLoading = ref(true);
+        const theme = ref(ThemeHelper.getInitialTheme() as Theme);
 
         const normalizeOwner = (owner: string | null): string =>
           owner || 'unowned';
@@ -150,6 +153,17 @@ export class AppController {
           }, 4000);
         };
 
+        const applyTheme = (value: Theme) => {
+          theme.value = value;
+          ThemeHelper.applyTheme(value);
+        };
+
+        const toggleTheme = () => {
+          applyTheme(theme.value === 'dark' ? 'light' : 'dark');
+        };
+
+        const themeLabel = computed(() => ThemeHelper.getLabel(theme.value));
+
         const applyServiceResponse = (data: ServicesResponseDto) => {
           services.value = data.services;
           expiryWarningMinutes.value = data.expiryWarningMinutes;
@@ -259,10 +273,15 @@ export class AppController {
         };
 
         onMounted(async () => {
-          await loadUser();
-          await loadServices();
-          initEvents();
-          scheduleAutoRefresh();
+          applyTheme(theme.value);
+          try {
+            await loadUser();
+            await loadServices();
+            initEvents();
+            scheduleAutoRefresh();
+          } finally {
+            isLoading.value = false;
+          }
         });
 
         watch(ownerFilter, (value) => {
@@ -285,6 +304,10 @@ export class AppController {
           toggleGroup,
           toastMessage,
           toastVisible,
+          isLoading,
+          theme,
+          themeLabel,
+          toggleTheme,
           formatTime: TimeHelper.formatTime,
           claim,
           release,

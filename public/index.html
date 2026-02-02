@@ -8,38 +8,55 @@
 </head>
 <body>
   <div id="app" v-cloak>
-    <header class="top-bar">
-      <div>
-        <h1>Service Availability</h1>
-        <p v-if="user">Hello {{ user.nickname }}</p>
-      </div>
-      <div class="top-actions">
-        <label class="owner-filter">
-          <span>Owner</span>
-          <select v-model="ownerFilter">
-            <option value="all">All owners</option>
-            <option v-for="owner in owners" :key="owner.value" :value="owner.value">
-              {{ owner.label }}
-            </option>
-          </select>
-        </label>
-        <label class="name-filter">
-          <span>Service</span>
-          <input
-            v-model="serviceNameFilter"
-            type="text"
-            placeholder="Regex (e.g. ^order)"
-          />
-          <span v-if="serviceNameFilterError" class="muted filter-error">
-            {{ serviceNameFilterError }}
-          </span>
-        </label>
-        <button @click="refresh">Refresh</button>
-        <button @click="logout">Logout</button>
-      </div>
-    </header>
+    <div v-if="isLoading" class="loading-screen" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <div class="loading-text">Loading services...</div>
+    </div>
+    <div v-else>
+      <header class="top-bar">
+        <div>
+          <h1>Service Availability</h1>
+          <p v-if="user">Hello {{ user.nickname }}</p>
+          <div class="filters-row">
+            <label class="owner-filter">
+              <span>Owner</span>
+              <select v-model="ownerFilter">
+                <option value="all">All owners</option>
+                <option v-for="owner in owners" :key="owner.value" :value="owner.value">
+                  {{ owner.label }}
+                </option>
+              </select>
+            </label>
+            <label class="name-filter">
+              <span>Service</span>
+              <input
+                v-model="serviceNameFilter"
+                type="text"
+                placeholder="Regex (e.g. ^order)"
+              />
+              <span v-if="serviceNameFilterError" class="muted filter-error">
+                {{ serviceNameFilterError }}
+              </span>
+            </label>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button
+            class="theme-toggle"
+            @click="toggleTheme"
+            :aria-pressed="theme === 'dark'"
+            :aria-label="themeLabel"
+            :title="themeLabel"
+          >
+            <span v-if="theme === 'dark'" class="theme-icon sun" aria-hidden="true"></span>
+            <span v-else class="theme-icon moon" aria-hidden="true"></span>
+          </button>
+          <button @click="refresh">Refresh</button>
+          <button @click="logout">Logout</button>
+        </div>
+      </header>
 
-    <main>
+      <main>
       <section class="in-use">
         <h2>In Use</h2>
         <div class="in-use-list">
@@ -89,9 +106,10 @@
           </div>
         </section>
       </section>
-    </main>
+      </main>
 
-    <div id="toast" class="toast" :class="{ hidden: !toastVisible }">{{ toastMessage }}</div>
+      <div id="toast" class="toast" :class="{ hidden: !toastVisible }">{{ toastMessage }}</div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
