@@ -109,6 +109,7 @@ export type ExpiryWarningPayload = {
 
 export class SlackNotificationService {
   private readonly client: SlackApiClient | null;
+  private readonly channel: string | null;
   private readonly userIdCache = new Map<string, string>();
 
   constructor(private readonly config: SlackConfigDto) {
@@ -117,10 +118,15 @@ export class SlackNotificationService {
     } else {
       this.client = null;
     }
+    this.channel = config.channel ? config.channel.trim() : null;
   }
 
   isEnabled(): boolean {
     return Boolean(this.client);
+  }
+
+  isChannelEnabled(): boolean {
+    return Boolean(this.client && this.channel);
   }
 
   async sendExpiryWarning(
@@ -144,6 +150,33 @@ export class SlackNotificationService {
       `(${payload.environmentName}) expires in ${payload.minutesLeft} ` +
       `${minutesLabel}. Open the scheduler to extend if needed.`;
     await this.client.postMessage(channelId, text);
+    return true;
+  }
+
+  async sendClaimedToChannel(
+    payload: ExpiryWarningPayload & { userLabel: string },
+  ): Promise<boolean> {
+    if (!this.client || !this.channel) {
+      return false;
+    }
+    const minutesLabel = payload.minutesLeft === 1 ? 'minute' : 'minutes';
+    const text =
+      `${payload.userLabel} claimed ${payload.serviceName} ` +
+      `(${payload.environmentName}) for ${payload.minutesLeft} ${minutesLabel}.`;
+    await this.client.postMessage(this.channel, text);
+    return true;
+  }
+
+  async sendReleasedToChannel(
+    payload: { serviceName: string; environmentName: string; userLabel: string },
+  ): Promise<boolean> {
+    if (!this.client || !this.channel) {
+      return false;
+    }
+    const text =
+      `${payload.userLabel} released ${payload.serviceName} ` +
+      `(${payload.environmentName}).`;
+    await this.client.postMessage(this.channel, text);
     return true;
   }
 

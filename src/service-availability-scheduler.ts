@@ -54,15 +54,15 @@ async function start() {
   const reservationRepository = new ReservationRepository(db);
 
   const userService = new UserService(userRepository);
+  const slackNotificationService = new SlackNotificationService(config.slack);
   const reservationService = new ReservationService(
     reservationRepository,
     userService,
     services,
     config.expiryWarningMinutes,
     config.autoRefreshMinutes,
+    slackNotificationService,
   );
-
-  const slackNotificationService = new SlackNotificationService(config.slack);
   const expiringReservationNotifier = new ExpiringReservationNotifier(
     reservationRepository,
     userService,

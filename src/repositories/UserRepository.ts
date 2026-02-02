@@ -24,6 +24,17 @@ export class UserRepository extends AbstractMysqlRepository {
     return new User(row.id, row.email, row.nickname);
   }
 
+  async findById(id: number): Promise<User | null> {
+    const row = await this.get<UserRow>(
+      'SELECT id, email, nickname FROM users WHERE id = ?',
+      [id],
+    );
+    if (!row) {
+      return null;
+    }
+    return new User(row.id, row.email, row.nickname);
+  }
+
   async findByIds(ids: number[]): Promise<User[]> {
     if (!ids.length) {
       return [];

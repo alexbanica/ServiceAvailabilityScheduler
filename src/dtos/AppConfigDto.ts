@@ -12,6 +12,7 @@ export class SlackConfigDto {
     public readonly enabled: boolean,
     public readonly botToken: string | null,
     public readonly notifyIntervalSeconds: number,
+    public readonly channel: string | null,
   ) {}
 }
 

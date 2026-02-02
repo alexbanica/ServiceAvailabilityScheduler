@@ -8,6 +8,10 @@ export class UserService {
     return this.userRepository.findByEmail(email);
   }
 
+  async findById(id: number): Promise<User | null> {
+    return this.userRepository.findById(id);
+  }
+
   async getNicknamesByIds(ids: number[]): Promise<Map<number, string>> {
     const users = await this.userRepository.findByIds(ids);
     const map = new Map<number, string>();

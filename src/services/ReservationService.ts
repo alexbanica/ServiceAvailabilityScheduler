@@ -4,6 +4,7 @@ import { ServiceStatusDto } from '../dtos/ServiceStatusDto';
 import { ServiceDefinition } from '../entities/ServiceDefinition';
 import { ReservationRepository } from '../repositories/ReservationRepository';
 import { UserService } from './UserService';
+import { SlackNotificationService } from './SlackNotificationService';
 
 export class ReservationService {
   constructor(
@@ -12,6 +13,7 @@ export class ReservationService {
     private readonly services: ServiceDefinition[],
     private readonly expiryWarningMinutes: number,
     private readonly autoRefreshMinutes: number,
+    private readonly slackNotificationService: SlackNotificationService | null,
   ) {}
 
   getServiceList(now: Date): Promise<ServiceListDto> {
@@ -99,6 +101,13 @@ export class ReservationService {
       expires,
     );
 
+    await this.notifyClaimed(
+      service,
+      userId,
+      effectiveLabel,
+      Boolean(claimedByTeam),
+    );
+
     return expires;
   }
 
@@ -119,6 +128,14 @@ export class ReservationService {
     }
 
     await this.reservationRepository.releaseReservation(reservation, nowIso);
+
+    await this.notifyReleased(
+      reservation.serviceName,
+      reservation.environmentName,
+      userId,
+      reservation.claimedByLabel,
+      reservation.claimedByTeam,
+    );
   }
 
   async extend(serviceKey: string, userId: number, now: Date): Promise<string> {
@@ -214,5 +231,69 @@ export class ReservationService {
       throw new Error('Service not found');
     }
     return service;
+  }
+
+  private async notifyClaimed(
+    service: ServiceDefinition,
+    userId: number,
+    claimedByLabel: string | null,
+    claimedByTeam: boolean,
+  ): Promise<void> {
+    if (!this.slackNotificationService?.isChannelEnabled()) {
+      return;
+    }
+    try {
+      const userLabel = await this.resolveUserLabel(
+        userId,
+        claimedByLabel,
+        claimedByTeam,
+      );
+      await this.slackNotificationService.sendClaimedToChannel({
+        serviceName: service.label,
+        environmentName: service.environment,
+        minutesLeft: service.defaultMinutes,
+        userLabel,
+      });
+    } catch (err) {
+      console.warn('Failed to send slack claim notification', err);
+    }
+  }
+
+  private async notifyReleased(
+    serviceName: string,
+    environmentName: string,
+    userId: number,
+    claimedByLabel: string | null,
+    claimedByTeam: boolean,
+  ): Promise<void> {
+    if (!this.slackNotificationService?.isChannelEnabled()) {
+      return;
+    }
+    try {
+      const userLabel = await this.resolveUserLabel(
+        userId,
+        claimedByLabel,
+        claimedByTeam,
+      );
+      await this.slackNotificationService.sendReleasedToChannel({
+        serviceName,
+        environmentName,
+        userLabel,
+      });
+    } catch (err) {
+      console.warn('Failed to send slack release notification', err);
+    }
+  }
+
+  private async resolveUserLabel(
+    userId: number,
+    claimedByLabel: string | null,
+    claimedByTeam: boolean,
+  ): Promise<string> {
+    if (claimedByTeam && claimedByLabel) {
+      return claimedByLabel;
+    }
+    const user = await this.userService.findById(userId);
+    return user?.nickname || user?.email || `User ${userId}`;
   }
 }

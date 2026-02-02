@@ -60,11 +60,16 @@ export class ConfigService {
       slackConfig.notify_interval_seconds,
       60,
     );
+    const slackChannel = this.readString(
+      process.env.SLACK_CHANNEL,
+      slackConfig.channel,
+    );
 
     const slack = new SlackConfigDto(
       slackEnabled,
       slackToken,
       slackIntervalSeconds,
+      slackChannel,
     );
 
     return new AppConfigDto(

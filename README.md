@@ -62,6 +62,7 @@ Environment variables:
 - `SLACK_ENABLED` (`true`/`false`)
 - `SLACK_BOT_TOKEN` (bot token for the Slack app)
 - `SLACK_NOTIFY_INTERVAL_SECONDS` (poll interval for expiring claims)
+- `SLACK_CHANNEL` (channel name or ID for claim/release updates)
 
 ## Schema
 
