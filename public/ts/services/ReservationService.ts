@@ -55,7 +55,10 @@ export class ReservationService {
     );
   }
 
-  static async claim(serviceKey: string, teamName?: string | null): Promise<void> {
+  static async claim(
+    serviceKey: string,
+    teamName?: string | null,
+  ): Promise<void> {
     const response = await ApiService.post('/api/claim', {
       service_key: serviceKey,
       claimed_by_label: teamName || null,

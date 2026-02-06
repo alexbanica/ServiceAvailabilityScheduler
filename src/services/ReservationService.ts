@@ -32,7 +32,8 @@ export class ReservationService {
     const results = this.services.map((svc) => {
       const active = reservationMap.get(svc.key);
       const claimedBy =
-        active?.claimedByLabel || (active ? nicknameMap.get(active.userId) : null);
+        active?.claimedByLabel ||
+        (active ? nicknameMap.get(active.userId) : null);
       return new ServiceStatusDto(
         svc.key,
         svc.environmentId,
